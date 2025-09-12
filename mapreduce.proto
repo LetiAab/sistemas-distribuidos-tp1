@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+service Master {
+  rpc RequestJob (Request) returns (JobReply) {}
+}
+
+enum JobType {
+    Map = 0;
+    Reduce = 1;
+}
+
+// solo una idea
+enum Program {
+    Wordcount = 1;
+    InvertedIndex = 1;
+}
+
+message Request {
+  int worker_id = 1;
+}
+
+message JobReply {
+  JobType type = 0;
+  string file = 1;
+}
