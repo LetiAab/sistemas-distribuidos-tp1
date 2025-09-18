@@ -1,1 +1,6 @@
-mr-*
+src/test_data
+
+# Compilados
+*.so
+src/plugins/test_wc
+src/plugins/test_plugin
