@@ -25,7 +25,8 @@ func init() {
 		words := strings.FieldsFunc(content, ff)
 	
 		for _, word := range words{
-			kvs = append(kvs, common.KeyValue{word, "1"})
+            normalizedWord := strings.ToLower(word)
+			kvs = append(kvs, common.KeyValue{normalizedWord, "1"})
 		}
 		
 		return kvs
