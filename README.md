@@ -13,5 +13,8 @@ https://docs.google.com/document/d/1ZiBafN9aLjimpEpSQG9Z6beNReBKkOSQo1wv9lgORjo/
 * Leticia Aab - 106053
 
 
+### Como Ejecutar (plugins)
 
-
+Plugin Word Count
+Compilar: Desde src/plugins/, ejecutar go build -buildmode=plugin wc.go para generar wc.so
+Probar: Ejecutar ./test_wc para verificar que cuenta palabras correctamente (requiere compilar primero go build test_wc.go)
