@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package mapreduce;
+
+option go_package = "/mapreduce";
+
+service Master {
+  rpc RequestJob (Request) returns (JobReply) {}
+  rpc ReportFinished (FinishedRequest) returns (Ack) {} // quizas no hace falta devolver FinishedRequest
+}
+
+enum JobType {
+  MAP = 0;
+  REDUCE = 1;
+  NONE = 2; // no hay más trabajo
+}
+
+message Request {
+  int32 worker_id = 1;
+}
+
+message JobReply {
+  JobType type = 1;
+  int32 task_id = 2;
+  repeated string files = 3;  // puede ser 1 archivo para map o varios para reduce
+  int32 n_reduce = 4;         // total de reduces
+  int32 n_map = 5;            // total de maps, se podria poner dentro de archivo de constantes tambien
+}
+
+message FinishedRequest {
+  JobType type = 1;
+  int32 task_id = 2;
+}
+
+message Ack {}
