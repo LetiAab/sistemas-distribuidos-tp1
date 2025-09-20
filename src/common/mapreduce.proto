@@ -30,6 +30,7 @@ message JobReply {
 message FinishedRequest {
   JobType type = 1;
   int32 task_id = 2;
+  string result_path = 3;
 }
 
 message Ack {}

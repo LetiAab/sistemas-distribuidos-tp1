@@ -4,15 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"hash/fnv"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"plugin"
-	"time"
-
 	"sistemas-distribuidos-tp1/common"
 	"sistemas-distribuidos-tp1/common/mapreduce"
+	"time"
 
 	"google.golang.org/grpc"
 )
@@ -49,11 +49,24 @@ func main() {
 	loadPlugin(pluginFile)
 
 	// Conexión gRPC (TCP por ahora)
-	conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
+	/*
+		conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
+		if err != nil {
+			log.Fatalf("No se pudo conectar con el coordinador: %v", err)
+		}
+		defer conn.Close()
+	*/
+
+	//Conexion con Unix Domain Sockets
+	socketPath := "/tmp/mr.sock"
+	conn, err := grpc.Dial("unix://"+socketPath,
+		grpc.WithInsecure(),
+		grpc.WithBlock())
+
 	if err != nil {
-		log.Fatalf("No se pudo conectar con el coordinador: %v", err)
+		log.Fatalf("No se pudo conectar al coordinator: %v", err)
 	}
-	defer conn.Close()
+	defer conn.Close() //cuando termina main, cierra la conexion
 
 	client := mapreduce.NewMasterClient(conn)
 
@@ -99,30 +112,61 @@ func main() {
 	}
 }
 
+func ihash(key string) int {
+	h := fnv.New32a()
+	h.Write([]byte(key))
+	return int(h.Sum32() & 0x7fffffff)
+}
+
 // Ejecuta la tarea MAP
 func doMap(reply *mapreduce.JobReply) {
 	filename := reply.Files[0]
 	content, err := ioutil.ReadFile(filename)
 	if err != nil {
+		print(filename)
 		log.Fatalf("No se pudo leer el archivo %v: %v", filename, err)
 	}
 
 	kva := mapf(filename, string(content))
 
-	// Versión mínima: siempre reduce=0
-	outfile := fmt.Sprintf("mr-%d-%d", reply.TaskId, 0)
-	ofile, err := os.Create(outfile)
-	if err != nil {
-		log.Fatalf("No se pudo crear el archivo de salida %v: %v", outfile, err)
-	}
-	defer ofile.Close()
+	encoders := make([]*json.Encoder, reply.NReduce)
+	files := make([]*os.File, reply.NReduce)
 
-	enc := json.NewEncoder(ofile)
+	for r := 0; r < int(reply.NReduce); r++ {
+		outfile := fmt.Sprintf("mr-%d-%d", reply.TaskId, r)
+		files[r], err = os.Create(outfile)
+		if err != nil {
+			log.Fatalf("No se pudo crear el archivo %v: %v", outfile, err)
+		}
+
+		defer files[r].Close()
+		encoders[r] = json.NewEncoder(files[r])
+	}
+
 	for _, kv := range kva {
-		if err := enc.Encode(&kv); err != nil {
+
+		reduceTask := ihash(kv.Key) % int(reply.NReduce)
+
+		if err := encoders[reduceTask].Encode(&kv); err != nil {
 			log.Printf("Advertencia: no se pudo codificar kv %v: %v", kv, err)
 		}
 	}
+
+	/*
+		// Versión mínima: siempre reduce=0
+		outfile := fmt.Sprintf("mr-%d-%d", reply.TaskId, 0)
+		ofile, err := os.Create(outfile)
+		if err != nil {
+			log.Fatalf("No se pudo crear el archivo de salida %v: %v", outfile, err)
+		}
+		defer ofile.Close()
+
+		enc := json.NewEncoder(ofile)
+		for _, kv := range kva {
+			if err := enc.Encode(&kv); err != nil {
+				log.Printf("Advertencia: no se pudo codificar kv %v: %v", kv, err)
+			}
+		}*/
 }
 
 // Ejecuta la tarea REDUCE
@@ -130,7 +174,7 @@ func doReduce(reply *mapreduce.JobReply) {
 	intermediate := []common.KeyValue{}
 
 	// Buscar todos los mr-*-TaskId
-	files, err := filepath.Glob(fmt.Sprintf("mr-*-%d", reply.TaskId))
+	files, err := filepath.Glob(fmt.Sprintf("src/mr-*-%d", reply.TaskId))
 	if err != nil {
 		log.Fatalf("Error al buscar archivos intermedios: %v", err)
 	}
