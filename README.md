@@ -90,8 +90,8 @@ diff sequential.txt distributed.txt
 Para automatizar la comparación entre las versiones secuencial y distribuida:
 
 ```sh
-chmod +x ./success_test.sh
-./success_test.sh
+chmod +x ./tests/wordcount_success.sh
+./tests/wordcount_success.sh
 ```
 
 Este test verifica que ambas implementaciones producen resultados idénticos en condiciones normales.
@@ -101,8 +101,8 @@ Este test verifica que ambas implementaciones producen resultados idénticos en 
 Para demostrar que el sistema maneja fallos de workers correctamente:
 
 ```sh
-chmod +x ./fault_tolerance_test.sh
-./fault_tolerance_test.sh
+chmod +x ./tests/wordcount_fault_tolerance.sh
+./tests/wordcount_fault_tolerance.sh
 ```
 
 Este test simula fallos de workers durante la ejecución:
