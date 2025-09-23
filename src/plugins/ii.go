@@ -4,6 +4,7 @@
 package main
 
 import (
+	"path/filepath"
 	"sistemas-distribuidos-tp1/common"
 	"strings"
 	"unicode"
@@ -19,10 +20,12 @@ func init() {
 		ff := func(r rune) bool { return !unicode.IsLetter(r) }
 		words := strings.FieldsFunc(content, ff)
 
+		baseFilename := filepath.Base(filename)
+
 		// para ii, emitimos (palabra, archivo_donde_aparece)
 		for _, word := range words {
 			normalizedWord := strings.ToLower(word)
-			kvs = append(kvs, common.KeyValue{normalizedWord, filename})
+			kvs = append(kvs, common.KeyValue{normalizedWord, baseFilename})
 		}
 
 		return kvs

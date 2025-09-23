@@ -3,9 +3,9 @@
 # Archivo: start_workers.sh
 
 # Compilar el plugin si no existe
-if [ ! -f "plugins/wc.so" ]; then
+if [ ! -f "plugins/ii.so" ]; then
     echo "Compilando plugin..."
-    go build -buildmode=plugin -o plugins/wc.so plugins/ii.go
+    go build -buildmode=plugin -o plugins/ii.so plugins/ii.go
 fi
 
 # Levantar 3 workers en terminales separadas
