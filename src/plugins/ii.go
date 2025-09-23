@@ -4,30 +4,25 @@
 package main
 
 import (
-	"fmt"
 	"sistemas-distribuidos-tp1/common"
-	"strconv"
 	"strings"
 	"unicode"
 )
 
-// Defino así las funcs porque Go carga Plugins dinamicamente,
-// osea q busca variables públicas.
 var Map func(string, string) []common.KeyValue
 var Reduce func(string, []string) string
 
 func init() {
-
 	Map = func(filename string, content string) []common.KeyValue {
 		var kvs []common.KeyValue
 
-		// TODO: Esto no separa entre min y mayus creo
 		ff := func(r rune) bool { return !unicode.IsLetter(r) }
 		words := strings.FieldsFunc(content, ff)
 
+		// para ii, emitimos (palabra, archivo_donde_aparece)
 		for _, word := range words {
 			normalizedWord := strings.ToLower(word)
-			kvs = append(kvs, common.KeyValue{normalizedWord, "1"})
+			kvs = append(kvs, common.KeyValue{normalizedWord, filename})
 		}
 
 		return kvs
@@ -35,17 +30,19 @@ func init() {
 
 	Reduce = func(key string, values []string) string {
 
-		sum := 0
-		for _, v := range values {
-			num, err := strconv.Atoi(v)
-			if err != nil {
-				fmt.Println("Hubo un error en: ", err)
-				continue
-			}
-			sum += num
+		// Eliminar duplicados usando un map como set
+		uniqueFiles := make(map[string]bool)
+		for _, file := range values {
+			uniqueFiles[file] = true
 		}
 
-		return strconv.Itoa(sum)
-	}
+		// Convertir a slice ordenado
+		var fileList []string
+		for file := range uniqueFiles {
+			fileList = append(fileList, file)
+		}
 
+		// Unir con comas
+		return strings.Join(fileList, ",")
+	}
 }
