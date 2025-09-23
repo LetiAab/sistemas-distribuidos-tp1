@@ -38,3 +38,47 @@ sudo make -C gutenberg install
 chmod +x ./download_pg_books.sh
 ./download_pg_books.sh
 ```
+
+### Demo wordcount
+
+Pasos para demostrar el funcionamiento de la implementación de wordcount:
+
+1. Descargar los libros según lo expuesto [anteriormente](#descargar-libros-de-gutenberg).
+2. Ejecutar el coordinador:
+   
+```sh
+go run coordinator/coordinator.go ../books/pg-*.txt
+```
+
+3. Ejecutar el script `./start_workers_wc.sh`:
+
+```sh
+chmod +x ./start_workers_wc.sh
+./start_workers_wc.sh
+```
+
+4. Al finalizar, concatenar y ordenar los resultados con:
+
+```sh
+cat files/mr-out-* | sort > distributed.txt
+```
+
+5. Ejecutar la versión secuencial de wordcount mediante:
+
+```sh
+go run secuencia.go ../books/pg-*.txt
+```
+
+6. Al finalizar, ordenar los resultados:
+
+```sh
+sort mr-out-0 > sequential.txt
+```
+
+7. Por último, comparar los resultados con `diff`:
+
+```sh
+diff sequential.txt distributed.txt
+```
+
+8. El output debería ser vacío, demostrando que no existe diferencia en el resultado entre ambas implementaciones de wordcount.
