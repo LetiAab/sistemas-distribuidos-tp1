@@ -133,7 +133,7 @@ func doMap(reply *mapreduce.JobReply) {
 	files := make([]*os.File, reply.NReduce)
 
 	for r := 0; r < int(reply.NReduce); r++ {
-		outfile := fmt.Sprintf("mr-%d-%d", reply.TaskId, r)
+		outfile := fmt.Sprintf("files/mr-%d-%d", reply.TaskId, r)
 		files[r], err = os.Create(outfile)
 		if err != nil {
 			log.Fatalf("No se pudo crear el archivo %v: %v", outfile, err)
@@ -174,7 +174,7 @@ func doReduce(reply *mapreduce.JobReply) {
 	intermediate := []common.KeyValue{}
 
 	// Buscar todos los mr-*-TaskId
-	files, err := filepath.Glob(fmt.Sprintf("src/mr-*-%d", reply.TaskId))
+	files, err := filepath.Glob(fmt.Sprintf("files/mr-*-%d", reply.TaskId))
 	if err != nil {
 		log.Fatalf("Error al buscar archivos intermedios: %v", err)
 	}
@@ -204,7 +204,7 @@ func doReduce(reply *mapreduce.JobReply) {
 	}
 
 	// Escribir salida
-	oname := fmt.Sprintf("mr-out-%d", reply.TaskId)
+	oname := fmt.Sprintf("files/mr-out-%d", reply.TaskId)
 	ofile, err := os.Create(oname)
 	if err != nil {
 		log.Fatalf("No se pudo crear el archivo de salida %v: %v", oname, err)

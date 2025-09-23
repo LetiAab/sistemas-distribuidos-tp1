@@ -198,7 +198,7 @@ func main() {
 		log.Fatalf("Error al crear el socket Unix:  %v", err)
 	}
 
-	var nReduce = 1
+	var nReduce = 3
 
 	var coordinator = NewCoordinatorServer(files, nReduce)
 
