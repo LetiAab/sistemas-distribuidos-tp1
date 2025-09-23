@@ -8,25 +8,27 @@ import (
 	"os"
 	"sistemas-distribuidos-tp1/common/mapreduce"
 	"sync"
+	"time"
 
 	"google.golang.org/grpc"
 )
 
 type TaskInfo struct {
-	jobType   mapreduce.JobType
-	taskId    int
-	completed bool
-	file      string
+	jobType      mapreduce.JobType
+	taskId       int
+	completed    bool
+	file         string
+	assigned     bool
+	assignedTime time.Time
 }
 
 type coordinatorServer struct {
 	mapreduce.UnimplementedMasterServer
-	mapTask               []TaskInfo
-	mapFinished           bool
-	reduceTask            []TaskInfo
-	reduceFinished        bool
-	mutex                 sync.Mutex
-	counter_task_assigner int
+	mapTask        []TaskInfo
+	mapFinished    bool
+	reduceTask     []TaskInfo
+	reduceFinished bool
+	mutex          sync.Mutex
 }
 
 // Función constructor para coordinatorServer
@@ -41,8 +43,6 @@ func NewCoordinatorServer(files []string, nReduce int) *coordinatorServer {
 			file:      file,
 		}
 	}
-
-	print(len(mapTasks))
 
 	// Crear tareas REDUCE
 	reduceTasks := make([]TaskInfo, nReduce)
@@ -60,46 +60,35 @@ func NewCoordinatorServer(files []string, nReduce int) *coordinatorServer {
 	}
 }
 
-// Asigna un map mientras haya alguno sin completar.
-// Asigna un reduce mientras haya alguno sin completar, si todos los maps están completados.
+// Asigna un map mientras haya alguno sin completar y sin asignar.
+// Asigna un reduce mientras haya alguno sin completar y sin asignar, si todos los maps están completados.
 // Si no hay tareas disponibles, devuelve nil.
 func GetNextTask(c *coordinatorServer) *TaskInfo {
-	// if queda algun map not done
-	// asignar
-	// else if queda algun reduce not done
-	// asignar
-	// devolver nil
-
+	// Verificar tareas MAP
 	if !c.mapFinished {
-		n := len(c.mapTask)
-
-		for i := 0; i < n; i++ {
-			idx := c.counter_task_assigner % n
-			task := &c.mapTask[idx]
-
-			if !task.completed {
+		for i := 0; i < len(c.mapTask); i++ {
+			task := &c.mapTask[i]
+			if !task.completed && !task.assigned {
+				task.assigned = true
+				task.assignedTime = time.Now()
 				return task
 			}
-
-			c.counter_task_assigner++ // avanzar siempre
 		}
 	}
 
-	if !c.reduceFinished {
-		n := len(c.reduceTask)
-
-		for i := 0; i < n; i++ {
-			idx := c.counter_task_assigner % n
-			task := &c.reduceTask[idx]
-
-			if !task.completed {
+	// Verificar tareas REDUCE
+	if c.mapFinished && !c.reduceFinished {
+		for i := 0; i < len(c.reduceTask); i++ {
+			task := &c.reduceTask[i]
+			if !task.completed && !task.assigned {
+				task.assigned = true
+				task.assignedTime = time.Now()
 				return task
 			}
-
-			c.counter_task_assigner++ // avanzar siempre
 		}
 	}
 
+	// No hay tareas disponibles
 	return nil
 }
 
@@ -111,10 +100,11 @@ func (c *coordinatorServer) RequestJob(ctx context.Context, req *mapreduce.Reque
 	var task *TaskInfo = GetNextTask(c)
 
 	if task == nil {
+		// No hay tareas disponibles actualmente
 		return &mapreduce.JobReply{Type: mapreduce.JobType_NONE}, nil
 	}
 
-	fmt.Printf("Asignando tarea: %v %d %s\n", task.jobType, task.taskId, task.file)
+	log.Printf("Asignando tarea: %v %d\n", task.jobType, task.taskId)
 
 	return &mapreduce.JobReply{
 		Type:    task.jobType,
@@ -134,43 +124,110 @@ func (c *coordinatorServer) ReportFinished(ctx context.Context, req *mapreduce.F
 	switch req.Type {
 	case mapreduce.JobType_MAP:
 		if taskId < len(c.mapTask) {
-			c.mapTask[taskId].completed = true
-			fmt.Printf("MAP task %d marcada como completada\n", taskId)
+			task := &c.mapTask[taskId]
+			task.completed = true
+			task.assigned = false
 		}
 
-		// Verificar si todas las MAP están terminadas
-		finishedMapCount := 0
+		// Verificar si todas las tareas MAP están terminadas
+		allMapsCompleted := true
 		for _, task := range c.mapTask {
-			if task.completed {
-				finishedMapCount++
+			if !task.completed {
+				allMapsCompleted = false
+				break
 			}
 		}
-		if finishedMapCount == len(c.mapTask) {
+		if allMapsCompleted {
 			c.mapFinished = true
-			fmt.Printf("Todas las tareas MAP completadas - habilitando REDUCE\n")
+			log.Println("Todas las tareas MAP completadas - habilitando REDUCE")
 		}
 
 	case mapreduce.JobType_REDUCE:
 		if taskId < len(c.reduceTask) {
-			c.reduceTask[taskId].completed = true
-			fmt.Printf("REDUCE task %d marcada como completada\n", taskId)
+			task := &c.reduceTask[taskId]
+			task.completed = true
+			task.assigned = false
 		}
 
-		// Verificar si todas las REDUCE están terminadas
-		finishedReduceCount := 0
+		// Verificar si todas las tareas REDUCE están terminadas
+		allReducesCompleted := true
 		for _, task := range c.reduceTask {
-			if task.completed {
-				finishedReduceCount++
+			if !task.completed {
+				allReducesCompleted = false
+				break
 			}
 		}
-		if finishedReduceCount == len(c.reduceTask) {
+		if allReducesCompleted {
 			c.reduceFinished = true
-			fmt.Printf("Todas las tareas REDUCE completadas\n")
+			log.Println("Todas las tareas REDUCE completadas")
 		}
 	}
 
-	fmt.Printf("Tarea completada: %v %d\n", req.Type, req.TaskId)
+	log.Printf("Tarea completada: %v %d\n", req.Type, req.TaskId)
 	return &mapreduce.Ack{}, nil
+}
+
+func (c *coordinatorServer) monitorTasks() {
+	for {
+		time.Sleep(1 * time.Second) // Supervisar cada segundo
+
+		c.mutex.Lock()
+		now := time.Now()
+
+		// Verificar tareas MAP
+		for i := range c.mapTask {
+			task := &c.mapTask[i]
+			if task.assigned && !task.completed && now.Sub(task.assignedTime) > 10*time.Second {
+				log.Printf("Tarea MAP %d falló. Reasignando...\n", task.taskId)
+				// Eliminar archivos intermedios generados por la tarea fallida
+				for r := 0; r < len(c.reduceTask); r++ {
+					filename := fmt.Sprintf("files/mr-%d-%d", task.taskId, r)
+					if err := os.Remove(filename); err == nil {
+						log.Printf("Archivo intermedio eliminado: %s\n", filename)
+					}
+				}
+				task.assigned = false
+			}
+		}
+
+		// Verificar tareas REDUCE
+		for i := range c.reduceTask {
+			task := &c.reduceTask[i]
+			if task.assigned && !task.completed && now.Sub(task.assignedTime) > 10*time.Second {
+				log.Printf("Tarea REDUCE %d falló. Reasignando...\n", task.taskId)
+				// Eliminar archivo de salida generado por la tarea fallida
+				filename := fmt.Sprintf("files/mr-out-%d", task.taskId)
+				if err := os.Remove(filename); err == nil {
+					log.Printf("Archivo de salida eliminado: %s\n", filename)
+				}
+				task.assigned = false
+			}
+		}
+
+		c.mutex.Unlock()
+	}
+}
+
+func (c *coordinatorServer) allTasksCompleted() bool {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	// Verificar si todas las tareas MAP están completadas
+	for _, task := range c.mapTask {
+		if !task.completed {
+			return false
+		}
+	}
+
+	// Verificar si todas las tareas REDUCE están completadas
+	for _, task := range c.reduceTask {
+		if !task.completed {
+			return false
+		}
+	}
+
+	// Si todas las tareas están completadas
+	return true
 }
 
 func main() {
@@ -179,7 +236,7 @@ func main() {
 		os.Exit(1)
 	}
 	files := os.Args[1:]
-	fmt.Printf("Archivos de entrada: %v\n", files)
+	log.Printf("Archivos de entrada: %v\n", files)
 
 	//Conexion con tcp No me borren :(
 	/*
@@ -202,11 +259,26 @@ func main() {
 
 	var coordinator = NewCoordinatorServer(files, nReduce)
 
+	// Iniciar la supervisión de tareas
+	go coordinator.monitorTasks()
+
 	s := grpc.NewServer()
 	mapreduce.RegisterMasterServer(s, coordinator)
 
-	fmt.Printf("Coordinador escuchando en %s\n", socketPath)
-	if err := s.Serve(lis); err != nil {
-		log.Fatalf("Error al iniciar el servidor gRPC: %v", err)
+	// Iniciar el servidor gRPC en una goroutine
+	go func() {
+		log.Printf("Coordinador escuchando en %s\n", socketPath)
+		if err := s.Serve(lis); err != nil {
+			log.Fatalf("Error al iniciar el servidor gRPC: %v", err)
+		}
+	}()
+
+	// Esperar a que todas las tareas estén completas
+	for {
+		if coordinator.allTasksCompleted() {
+			log.Println("Todas las tareas MAP y REDUCE están completas. Finalizando coordinador.")
+			break
+		}
+		time.Sleep(1 * time.Second)
 	}
 }
