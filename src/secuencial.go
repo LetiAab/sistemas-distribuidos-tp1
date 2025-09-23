@@ -5,40 +5,44 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"sort"
+	"sistemas-distribuidos-tp1/common"
+	"strconv"
 	"strings"
 	"unicode"
 )
 
-type KeyValue struct {
-	Key   string
-	Value int
-}
+func Map(filename string, content string) []common.KeyValue {
+	var kvs []common.KeyValue
 
-func Map(filename string, content string) []KeyValue {
-	var kvs []KeyValue
 	ff := func(r rune) bool { return !unicode.IsLetter(r) } // Filtra caracteres no alfabéticos
 	words := strings.FieldsFunc(content, ff)                // Separa el contenido en palabras
 
 	for _, word := range words {
 		normalizedWord := strings.ToLower(word) // Convierte a minúsculas
-		kvs = append(kvs, KeyValue{normalizedWord, 1})
+		kvs = append(kvs, common.KeyValue{Key: normalizedWord, Value: "1"})
 	}
+
 	return kvs
 }
 
-func Reduce(key string, values []int) int {
+func Reduce(key string, values []string) string {
 	sum := 0
 	for _, v := range values {
-		sum += v
+		num, err := strconv.Atoi(v)
+		if err != nil {
+			fmt.Println("Hubo un error en: ", err)
+			continue
+		}
+		sum += num
 	}
-	return sum
+
+	return strconv.Itoa(sum)
 }
 
 func main() {
 	inputFiles := os.Args[1:]
 
-	var intermediate []KeyValue
+	var intermediate []common.KeyValue
 	for _, filename := range inputFiles {
 		content, err := os.ReadFile(filename)
 		if err != nil {
@@ -49,20 +53,16 @@ func main() {
 		intermediate = append(intermediate, kvs...)
 	}
 
-	groups := make(map[string][]int)
+	groups := make(map[string][]string)
 	for _, kv := range intermediate { // Agrupamos tal que quede - (Hello, [1, 1])
 		groups[kv.Key] = append(groups[kv.Key], kv.Value)
 	}
 
-	var results []KeyValue
+	var results []common.KeyValue
 	for key, values := range groups {
 		count := Reduce(key, values)
-		results = append(results, KeyValue{key, count})
+		results = append(results, common.KeyValue{Key: key, Value: count})
 	}
-
-	sort.Slice(results, func(i, j int) bool {
-		return results[i].Key < results[j].Key
-	})
 
 	outputFile := "mr-out-0"
 	file, err := os.Create(outputFile)
