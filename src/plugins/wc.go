@@ -21,7 +21,6 @@ func init() {
 	Map = func(filename string, content string) []common.KeyValue {
 		var kvs []common.KeyValue
 
-		// TODO: Esto no separa entre min y mayus creo
 		ff := func(r rune) bool { return !unicode.IsLetter(r) }
 		words := strings.FieldsFunc(content, ff)
 
