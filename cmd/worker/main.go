@@ -10,8 +10,8 @@ import (
 	"os"
 	"path/filepath"
 	"plugin"
-	"sistemas-distribuidos-tp1/common"
-	"sistemas-distribuidos-tp1/common/mapreduce"
+	"sistemas-distribuidos-tp1/internal/common"
+	"sistemas-distribuidos-tp1/internal/common/mapreduce"
 	"time"
 
 	"google.golang.org/grpc"

@@ -5,7 +5,7 @@ package main
 
 import (
 	"fmt"
-	"sistemas-distribuidos-tp1/common"
+	"sistemas-distribuidos-tp1/internal/common"
 	"strconv"
 	"strings"
 	"unicode"
@@ -26,7 +26,7 @@ func init() {
 
 		for _, word := range words {
 			normalizedWord := strings.ToLower(word)
-			kvs = append(kvs, common.KeyValue{normalizedWord, "1"})
+			kvs = append(kvs, common.KeyValue{Key: normalizedWord, Value: "1"})
 		}
 
 		return kvs

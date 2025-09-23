@@ -6,7 +6,7 @@ import (
 	"log"
 	"net"
 	"os"
-	"sistemas-distribuidos-tp1/common/mapreduce"
+	"sistemas-distribuidos-tp1/internal/common/mapreduce"
 	"sync"
 	"time"
 

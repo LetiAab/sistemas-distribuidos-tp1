@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 	"plugin"
-	"sistemas-distribuidos-tp1/common"
+	"sistemas-distribuidos-tp1/internal/common"
 )
 
 func main() {
