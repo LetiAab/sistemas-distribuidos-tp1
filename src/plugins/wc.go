@@ -26,14 +26,13 @@ func init() {
 
 		for _, word := range words {
 			normalizedWord := strings.ToLower(word)
-			kvs = append(kvs, common.KeyValue{normalizedWord, "1"})
+			kvs = append(kvs, common.KeyValue{Key: normalizedWord, Value: "1"})
 		}
 
 		return kvs
 	}
 
 	Reduce = func(key string, values []string) string {
-
 		sum := 0
 		for _, v := range values {
 			num, err := strconv.Atoi(v)
