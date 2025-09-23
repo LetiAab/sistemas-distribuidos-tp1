@@ -5,7 +5,7 @@
 # Compilar el plugin si no existe
 if [ ! -f "plugins/wc.so" ]; then
     echo "Compilando plugin..."
-    go build -buildmode=plugin -o plugins/wc.so
+    go build -buildmode=plugin -o plugins/wc.so plugins/wc.go
 fi
 
 # Levantar 3 workers en terminales separadas
