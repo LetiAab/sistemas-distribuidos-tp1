@@ -48,6 +48,14 @@ func main() {
 	pluginFile := os.Args[1]
 	loadPlugin(pluginFile)
 
+	// Crear la carpeta "files" si no existe
+	if _, err := os.Stat("files"); os.IsNotExist(err) {
+		err := os.Mkdir("files", 0755)
+		if err != nil {
+			log.Fatalf("No se pudo crear la carpeta 'files': %v", err)
+		}
+	}
+
 	// Conexión gRPC (TCP por ahora)
 	/*
 		conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
@@ -77,38 +85,40 @@ func main() {
 		req := &mapreduce.Request{WorkerId: workerID}
 		reply, err := client.RequestJob(context.Background(), req)
 		if err != nil {
-			log.Fatalf("Error al solicitar tarea: %v", err)
+			log.Println("Error de comunicación con el coordinador. Finalizando worker.")
+			return
 		}
 
 		switch reply.Type {
 		case mapreduce.JobType_MAP:
-			fmt.Printf("Worker recibió tarea MAP %d\n", reply.TaskId)
+			log.Printf("Worker recibió tarea MAP %d\n", reply.TaskId)
 			doMap(reply)
 			_, err := client.ReportFinished(context.Background(), &mapreduce.FinishedRequest{
 				Type:   mapreduce.JobType_MAP,
 				TaskId: reply.TaskId,
 			})
+			log.Printf("Finalizo MAP %d", reply.TaskId)
 			if err != nil {
 				log.Printf("Advertencia: no se pudo reportar finalización de tarea MAP %d: %v", reply.TaskId, err)
 			}
 
 		case mapreduce.JobType_REDUCE:
-			fmt.Printf("Worker recibió tarea REDUCE %d\n", reply.TaskId)
+			log.Printf("Worker recibió tarea REDUCE %d\n", reply.TaskId)
 			doReduce(reply)
 			_, err := client.ReportFinished(context.Background(), &mapreduce.FinishedRequest{
 				Type:   mapreduce.JobType_REDUCE,
 				TaskId: reply.TaskId,
 			})
+			log.Printf("Finalizo REDUCE %d", reply.TaskId)
 			if err != nil {
 				log.Printf("Advertencia: no se pudo reportar finalización de tarea REDUCE %d: %v", reply.TaskId, err)
 			}
 
 		case mapreduce.JobType_NONE:
-			fmt.Println("No hay más tareas, el worker finaliza")
-			return
+			// No hay tareas disponibles, esperar antes de volver a intentar
+			log.Println("No hay tareas disponibles, vuelvo a intentar...")
+			time.Sleep(1 * time.Second)
 		}
-
-		time.Sleep(time.Second) // chequear si es necesario
 	}
 }
 
@@ -151,7 +161,6 @@ func doMap(reply *mapreduce.JobReply) {
 			log.Printf("Advertencia: no se pudo codificar kv %v: %v", kv, err)
 		}
 	}
-
 	/*
 		// Versión mínima: siempre reduce=0
 		outfile := fmt.Sprintf("mr-%d-%d", reply.TaskId, 0)
