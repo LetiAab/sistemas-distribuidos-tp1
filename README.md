@@ -82,3 +82,33 @@ diff sequential.txt distributed.txt
 ```
 
 8. El output debería ser vacío, demostrando que no existe diferencia en el resultado entre ambas implementaciones de wordcount.
+
+### Tests de integración automatizados
+
+#### Test de funcionamiento normal
+
+Para automatizar la comparación entre las versiones secuencial y distribuida:
+
+```sh
+chmod +x ./tests/wordcount_success.sh
+./tests/wordcount_success.sh
+```
+
+Este test verifica que ambas implementaciones producen resultados idénticos en condiciones normales.
+
+#### Test de tolerancia a fallos
+
+Para demostrar que el sistema maneja fallos de workers correctamente:
+
+```sh
+chmod +x ./tests/wordcount_fault_tolerance.sh
+./tests/wordcount_fault_tolerance.sh
+```
+
+Este test simula fallos de workers durante la ejecución:
+- Inicia 4 workers
+- Mata 2 workers en diferentes momentos durante el procesamiento
+- Verifica que los workers restantes completen todas las tareas
+- Compara que el resultado final sea idéntico a la versión secuencial
+
+El test **PASA** si el sistema se recupera de los fallos y produce resultados correctos, demostrando la tolerancia a fallos del coordinador con su sistema de timeouts y reasignación de tareas.
