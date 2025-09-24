@@ -23,7 +23,7 @@ Probar: Ejecutar ./test_wc para verificar que cuenta palabras correctamente (req
 
 Para demostrar el funcionamiento del TP, se pueden utilizar libros del Proyecto Gutenberg, una librería online con más de 75 000 libros en formato digital, disponibles de forma gratuita.
 
-Para automatizar el proceso de descargar libros de Gutenberg, una forma es usar github.com/michaelnmmeyer/gutenberg. Es necesario contar con `python3`.
+Para automatizar el proceso de descargar libros de Gutenberg, una forma es utilizando [`github.com/michaelnmmeyer/gutenberg`](github.com/michaelnmmeyer/gutenberg). Es necesario contar con `python3`.
 
 - Clonar el repositorio e instalar:
 
@@ -85,7 +85,7 @@ diff sequential.txt distributed.txt
 
 ### Tests de integración automatizados
 
-#### Test de funcionamiento normal
+#### Wordcount: test de funcionamiento normal
 
 Para automatizar la comparación entre las versiones secuencial y distribuida:
 
@@ -96,7 +96,7 @@ chmod +x ./tests/wordcount_success.sh
 
 Este test verifica que ambas implementaciones producen resultados idénticos en condiciones normales.
 
-#### Test de tolerancia a fallos
+#### Wordcount: test de tolerancia a fallos
 
 Para demostrar que el sistema maneja fallos de workers correctamente:
 
