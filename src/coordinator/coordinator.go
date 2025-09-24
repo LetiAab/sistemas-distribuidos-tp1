@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
 	"net"
@@ -231,6 +232,10 @@ func (c *coordinatorServer) allTasksCompleted() bool {
 }
 
 func main() {
+
+	nReduce := flag.Int("nreduce", 3, "Cantidad de tareas reduce")
+	flag.Parse()
+
 	if len(os.Args) < 2 {
 		fmt.Fprintf(os.Stderr, "Uso: go run coordinator.go file1 file2 ...\n")
 		os.Exit(1)
@@ -247,9 +252,10 @@ func main() {
 		log.Fatalf("Error al crear el socket Unix:  %v", err)
 	}
 
-	var nReduce = 3
+	//var nReduce = 3
+	//var coordinator = NewCoordinatorServer(files, nReduce)
 
-	var coordinator = NewCoordinatorServer(files, nReduce)
+	var coordinator = NewCoordinatorServer(files, *nReduce)
 
 	// Iniciar la supervisión de tareas
 	go coordinator.monitorTasks()
