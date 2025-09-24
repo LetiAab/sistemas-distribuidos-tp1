@@ -56,15 +56,6 @@ func main() {
 		}
 	}
 
-	// Conexión gRPC (TCP por ahora)
-	/*
-		conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
-		if err != nil {
-			log.Fatalf("No se pudo conectar con el coordinador: %v", err)
-		}
-		defer conn.Close()
-	*/
-
 	//Conexion con Unix Domain Sockets
 	socketPath := "/tmp/mr.sock"
 	conn, err := grpc.Dial("unix://"+socketPath,

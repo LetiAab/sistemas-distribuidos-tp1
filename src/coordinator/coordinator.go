@@ -238,14 +238,6 @@ func main() {
 	files := os.Args[1:]
 	log.Printf("Archivos de entrada: %v\n", files)
 
-	//Conexion con tcp No me borren :(
-	/*
-		lis, err := net.Listen("tcp", ":50051")
-		if err != nil {
-			log.Fatalf("Error al escuchar el puerto: %v", err)
-		}
-	*/
-
 	//Conexion con Unix Domain Socket
 	socketPath := "/tmp/mr.sock"
 	os.Remove(socketPath)
