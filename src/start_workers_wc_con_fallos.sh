@@ -1,6 +1,6 @@
-if [ ! -f "plugins/wc.so" ]; then
+if [ ! -f "plugins/wc_con_fallos.so" ]; then
     echo "Compilando plugin..."
-    go build -buildmode=plugin -o plugins/wc_con_fallos.so plugins/wc_con_fallos.so
+    go build -buildmode=plugin -o plugins/wc_con_fallos.so plugins/wc_con_fallos.go
 fi
 
 echo "Iniciando workers en terminales separadas..."
