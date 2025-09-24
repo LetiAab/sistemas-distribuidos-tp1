@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
 	"net"
@@ -231,22 +232,17 @@ func (c *coordinatorServer) allTasksCompleted() bool {
 }
 
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Fprintf(os.Stderr, "Uso: go run coordinator.go file1 file2 ...\n")
+	nReduce := flag.Int("nreduce", 3, "Cantidad de tareas reduce")
+	flag.Parse()
+
+	files := flag.Args()
+	if len(files) == 0 {
+		fmt.Fprintf(os.Stderr, "Uso: go run coordinator.go [-nreduce N] file1 file2 ...\n")
 		os.Exit(1)
 	}
-	files := os.Args[1:]
 	log.Printf("Archivos de entrada: %v\n", files)
 
-	//Conexion con tcp No me borren :(
-	/*
-		lis, err := net.Listen("tcp", ":50051")
-		if err != nil {
-			log.Fatalf("Error al escuchar el puerto: %v", err)
-		}
-	*/
-
-	//Conexion con Unix Domain Socket
+	// Conexion con Unix Domain Socket
 	socketPath := "/tmp/mr.sock"
 	os.Remove(socketPath)
 
@@ -255,9 +251,7 @@ func main() {
 		log.Fatalf("Error al crear el socket Unix:  %v", err)
 	}
 
-	var nReduce = 3
-
-	var coordinator = NewCoordinatorServer(files, nReduce)
+	coordinator := NewCoordinatorServer(files, *nReduce)
 
 	// Iniciar la supervisión de tareas
 	go coordinator.monitorTasks()

@@ -39,6 +39,21 @@ chmod +x ./download_pg_books.sh
 ./download_pg_books.sh
 ```
 
+### Configuración de Reduce tasks
+
+El coordinador permite especificar con el flag `-nreduce` la cantidad de tareas **Reduce** a ejecutar.  
+Si no se indica este flag, por defecto se utilizan **3 Reduce tasks**.
+
+Ejemplos:
+
+```sh
+# Usando el valor por defecto (3 Reduce tasks)
+go run coordinator/coordinator.go ../books/pg-*.txt
+
+# Usando un valor personalizado (5 Reduce tasks)
+go run coordinator/coordinator.go -nreduce=5 ../books/pg-*.txt
+```
+
 ### Demo wordcount
 
 Pasos para demostrar el funcionamiento de la implementación de wordcount:
